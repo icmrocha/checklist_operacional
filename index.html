@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checklist Operacional - Restaurante</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --accent: #10b981;
+      --primary: #2563eb;
+      --border: #e2e8f0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 16px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      background: var(--card-bg);
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .btn-primary { background-color: var(--primary); color: white; }
+    .btn-danger { background-color: #ef4444; color: white; }
+    .btn-secondary { background-color: #e2e8f0; color: #334155; }
+
+    .category {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border-left: 4px solid var(--primary);
+    }
+
+    .category-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .task-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      min-height: 20px;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--border);
+      background: #fff;
+      cursor: grab;
+    }
+
+    .task-item:last-child {
+      border-bottom: none;
+    }
+
+    .task-item.completed {
+      opacity: 0.4;
+      text-decoration: line-through;
+    }
+
+    .hide-completed .task-item.completed {
+      display: none;
+    }
+
+    .task-item input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-right: 12px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .task-text {
+      flex: 1;
+      font-size: 0.95rem;
+    }
+
+    .add-form {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .add-form input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+
+    .drag-handle {
+      color: #cbd5e1;
+      margin-right: 8px;
+      cursor: grab;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Checklist Operacional</h1>
+
+  <div class="controls">
+    <button class="btn btn-primary" id="toggleViewBtn" onclick="toggleHideCompleted()">Esconder Concluídas</button>
+    <button class="btn btn-danger" onclick="resetChecklist()">Resetar Tudo</button>
+  </div>
+
+  <div id="checklistContainer"></div>
+
+  <script>
+    const initialData = [
+      {
+        category: "TRÊS DIAS ANTES DE ABRIR",
+        tasks: [
+          "INVENTÁRIO E LISTA DE COMPRAS",
+          "FAZER COMPRAS",
+          "HIGIENIZAR E GUARDAR COMPRAS",
+          "LIMPAR COZINHA"
+        ]
+      },
+      {
+        category: "DOIS DIAS ANTES DE ABRIR",
+        tasks: [
+          "FAZER CALDO DE LEGUMES",
+          "LOMBO MARINANDO",
+          "RALAR QUEIJO PARMESÃO",
+          "TRIÂNGULO AMOROSO (SE APLICÁVEL)",
+          "BASE DO ARANCINI (SE APLICÁVEL)",
+          "BASE DO COOKIE (SE APLICÁVEL)",
+          "CORTAR E PORCIONAR AIPIM NÃO ENCHE (160G PP IN NATURA)"
+        ]
+      },
+      {
+        category: "NO DIA ANTERIOR",
+        tasks: [
+          "ENROLAR ARANCINI E PORCIONAR (SE APLICÁVEL) - 4 PP",
+          "LINGUIÇA (LIMPAR, COZINHAR, PORCIONAR)",
+          "MOLHO BOLONHESA",
+          "PORCIONAR FRUTAS DO SUCO E DA SANGRIA/MANGARACUJA/ABACAXIQUE",
+          "FAZER CHA DE HIBISCO (SE APLICAVEL)",
+          "CORTAR E PORCIONAR COUVE",
+          "CORTAR E PORCIONAR COUVE-FLOR",
+          "CORTAR E PORCIONAR COGUS",
+          "ASSAR LOMBO E PORCIONAR",
+          "BRIGADEIRO (SE APLICÁVEL)",
+          "FAZER MANTEGALHO/PREP SORRISO ABERTO",
+          "CARREGAR UTENSÍLIOS ELÉTRICOS"
+        ]
+      },
+      {
+        category: "NO DIA — ÀS 10HS",
+        tasks: [
+          "ABRIR TRAILER",
+          "ORGANIZAR MESAS",
+          "AJEITAR BANHEIROS",
+          "PORCIONAR CIBOULETTES E ÁREA DE FINALIZAÇÃO",
+          "PREPARAR AREA DE SUCOS E DRINKS",
+          "ASSAR COOKIES",
+          "BASE RISO (SE APLICÁVEL)"
+        ]
+      },
+      {
+        category: "NO DIA — ÀS 11HS",
+        tasks: [
+          "JA TER TODO PRÉ-PREPARO FEITO E EM POTES (FORA DAS PANELAS)",
+          "BANCADAS LIMPAS E ESCORREDOR VAZIO",
+          "LIXEIRAS INTERNAS VAZIAS",
+          "ABASTECER E LIGAR MÁQUINA DE GELO",
+          "PRÉ AQUECER CALDO E ABASTECER PANELA ELETRICA",
+          "ALMOÇAR",
+          "LIGAR CEL RISO / MAQUINA CARTÕES/ IMPRESSORA (CHECAR BOBINAS)"
+        ]
+      },
+      {
+        category: "NO DIA — AO MEIO DIA",
+        tasks: [
+          "INICIAR PLAYLIST"
+        ]
+      },
+      {
+        category: "AO FECHAR",
+        tasks: [
+          "ESVAZIAR LIXEIRAS DOS BANHEIROS",
+          "LIMPAR LIXEIRAS DA COZINHA E LAVAR"
+        ]
+      },
+      {
+        category: "NA SEGUNDA-FEIRA SEGUINTE",
+        tasks: [
+          "PAGAR FORNECEDORES (COGUS, PÃES, ETC)",
+          "FAZER PEDIDOS FORNECEDORES",
+          "FAZER PEDIDOS MERCADO LIVRE (SE APLICÁVEL)"
+        ]
+      }
+    ];
+
+    let state = JSON.parse(localStorage.getItem("restaurantChecklistState")) || null;
+    let hideCompleted = false;
+
+    if (!state) {
+      state = initialData.map((cat, catIdx) => ({
+        category: cat.category,
+        tasks: cat.tasks.map((t, taskIdx) => ({
+          id: `${catIdx}-${taskIdx}-${Date.now()}`,
+          text: t,
+          done: false
+        }))
+      }));
+      saveState();
+    }
+
+    function saveState() {
+      localStorage.setItem("restaurantChecklistState", JSON.stringify(state));
+    }
+
+    function render() {
+      const container = document.getElementById("checklistContainer");
+      container.innerHTML = "";
+
+      if (hideCompleted) {
+        document.body.classList.add("hide-completed");
+        document.getElementById("toggleViewBtn").innerText = "Mostrar Todas";
+      } else {
+        document.body.classList.remove("hide-completed");
+        document.getElementById("toggleViewBtn").innerText = "Esconder Concluídas";
+      }
+
+      state.forEach((cat, catIdx) => {
+        const catEl = document.createElement("div");
+        catEl.className = "category";
+
+        const titleEl = document.createElement("div");
+        titleEl.className = "category-title";
+        titleEl.innerText = cat.category;
+        catEl.appendChild(titleEl);
+
+        const ul = document.createElement("ul");
+        ul.className = "task-list";
+        ul.dataset.catIdx = catIdx;
+
+        cat.tasks.forEach((task, taskIdx) => {
+          const li = document.createElement("li");
+          li.className = `task-item ${task.done ? 'completed' : ''}`;
+          li.draggable = true;
+          li.dataset.catIdx = catIdx;
+          li.dataset.taskIdx = taskIdx;
+
+          li.innerHTML = `
+            <span class="drag-handle">⠿</span>
+            <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleTask(${catIdx}, ${taskIdx})">
+            <span class="task-text">${task.text}</span>
+          `;
+
+          // Drag Events
+          li.addEventListener("dragstart", handleDragStart);
+          li.addEventListener("dragover", handleDragOver);
+          li.addEventListener("drop", handleDrop);
+
+          ul.appendChild(li);
+        });
+
+        catEl.appendChild(ul);
+
+        // Formulário para adicionar tarefa extra
+        const addForm = document.createElement("form");
+        addForm.className = "add-form";
+        addForm.innerHTML = `
+          <input type="text" placeholder="+ Adicionar tarefa nesta etapa..." required />
+          <button class="btn btn-secondary" type="submit">+</button>
+        `;
+        addForm.onsubmit = (e) => {
+          e.preventDefault();
+          const input = addForm.querySelector("input");
+          if (input.value.trim()) {
+            cat.tasks.push({ id: Date.now().toString(), text: input.value.trim(), done: false });
+            saveState();
+            render();
+          }
+        };
+        catEl.appendChild(addForm);
+
+        container.appendChild(catEl);
+      });
+    }
+
+    function toggleTask(catIdx, taskIdx) {
+      state[catIdx].tasks[taskIdx].done = !state[catIdx].tasks[taskIdx].done;
+      saveState();
+      render();
+    }
+
+    function toggleHideCompleted() {
+      hideCompleted = !hideCompleted;
+      render();
+    }
+
+    function resetChecklist() {
+      if (confirm("Deseja desmarcar todas as tarefas para o próximo ciclo?")) {
+        state.forEach(cat => cat.tasks.forEach(t => t.done = false));
+        saveState();
+        render();
+      }
+    }
+
+    // Drag and Drop Logic
+    let draggedItem = null;
+
+    function handleDragStart(e) {
+      draggedItem = {
+        catIdx: parseInt(this.dataset.catIdx),
+        taskIdx: parseInt(this.dataset.taskIdx)
+      };
+      e.dataTransfer.effectAllowed = "move";
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      const targetLi = e.target.closest(".task-item");
+      const targetUl = e.target.closest(".task-list");
+
+      if (!targetUl) return;
+
+      const targetCatIdx = parseInt(targetUl.dataset.catIdx);
+      let targetTaskIdx = targetLi ? parseInt(targetLi.dataset.taskIdx) : state[targetCatIdx].tasks.length;
+
+      // Unsplice & Splice
+      const [movedTask] = state[draggedItem.catIdx].tasks.splice(draggedItem.taskIdx, 1);
+      state[targetCatIdx].tasks.splice(targetTaskIdx, 0, movedTask);
+
+      saveState();
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>

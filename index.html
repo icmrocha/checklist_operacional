@@ -262,7 +262,7 @@
   <div class="controls">
     <button class="btn btn-primary" id="toggleViewBtn" onclick="toggleHideCompleted()">Esconder Concluídas</button>
     <button class="btn btn-danger" onclick="resetChecklist()">Resetar Tudo</button>
-    <button class="btn btn-secondary" onclick="fetchMasterFromSheets()">Atualizar do Sheets</button>
+    <button class="btn btn-secondary" onclick="fetchMasterFromSheets()">Atualizar Agora</button>
   </div>
 
   <!-- Onde o checklist será montado pelo JavaScript -->
@@ -284,10 +284,8 @@
     /* ==========================================================================
        6. COMUNICAÇÃO COM O GOOGLE SHEETS (FETCH)
        ========================================================================== */
-    // Busca a lista da aba MASTER no Google Sheets
     async function fetchMasterFromSheets() {
       const statusEl = document.getElementById("syncStatus");
-      statusEl.innerText = "Buscando dados da aba MASTER...";
 
       try {
         const response = await fetch(API_URL);
@@ -297,34 +295,31 @@
           state = data.map((cat, catIdx) => ({
             category: cat.category,
             tasks: cat.tasks.map((t, taskIdx) => ({
-              id: `${catIdx}-${taskIdx}-${Date.now()}`,
+              id: `${catIdx}-${taskIdx}`,
               text: t.text,
               tag: t.tag || "Cozinha",
-              done: false
+              done: t.done || false,
+              completedAt: t.completedAt || undefined
             }))
           }));
           
           saveState();
-          statusEl.innerText = "✓ Sincronizado com Google Sheets";
+          statusEl.innerText = "✓ Sincronizado em tempo real";
           render();
-        } else {
-          statusEl.innerText = "⚠ Planilha vazia ou sem dados na aba MASTER.";
         }
       } catch (error) {
         console.error("Erro ao buscar dados:", error);
-        statusEl.innerText = "⚠ Usando cópia local (offline)";
-        if (!state) initStateFallback();
+        statusEl.innerText = "⚠ Modo offline (cópia local)";
       }
     }
 
-    // Envia o registro de alteração para a aba LOG do Google Sheets
     function sendLogToSheets(categoria, tarefa, tag, status, horarioConclusao) {
       const statusEl = document.getElementById("syncStatus");
-      statusEl.innerText = "Salvando na nuvem...";
+      statusEl.innerText = "Enviando alteração...";
 
       fetch(API_URL, {
         method: "POST",
-        mode: "no-cors", // Garante envio direto sem bloqueio de CORS no navegador
+        mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           idServico: idServicoAtual,
@@ -336,7 +331,7 @@
         })
       })
       .then(() => {
-        statusEl.innerText = "✓ Alteração salva no Google Sheets";
+        statusEl.innerText = "✓ Salvo no Google Sheets";
       })
       .catch(err => {
         console.error("Erro ao enviar log:", err);
@@ -375,7 +370,6 @@
       saveState();
       render();
 
-      // Envia os dados para a aba LOG
       sendLogToSheets(categoria, task.text, task.tag, task.done, horarioFormatado);
     }
 
@@ -548,11 +542,14 @@
       render();
     }
 
-    // Inicializa buscando dados diretamente da aba MASTER no Google Sheets
+    // Inicialização
     if (state) {
       render();
     }
     fetchMasterFromSheets();
+
+    // Consulta a planilha a cada 10 segundos automaticamente
+    setInterval(fetchMasterFromSheets, 10000);
   </script>
 </body>
 </html>

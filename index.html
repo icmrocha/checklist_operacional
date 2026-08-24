@@ -6,55 +6,6 @@
   <title>Checklist Operacional RISO</title>
 
   <style>
-
-    .sector-filters {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
-.btn-tag {
-  flex: 1;
-  background: #e2e8f0;
-  color: #475569;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.btn-tag.active {
-  background: var(--primary);
-  color: #ffffff;
-}
-
-.badge-progress {
-  font-size: 0.8rem;
-  padding: 2px 8px;
-  border-radius: 12px;
-  background: #e2e8f0;
-  color: #334155;
-  font-weight: 600;
-}
-
-.badge-progress.complete {
-  background: var(--accent);
-  color: #ffffff;
-}
-
-.task-tag {
-  font-size: 0.7rem;
-  font-weight: bold;
-  color: #64748b;
-  background: #f1f5f9;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-left: 8px;
-  text-transform: uppercase;
-}
-    
     :root {
       --bg: #f4f6f8;
       --card-bg: #ffffff;
@@ -90,6 +41,29 @@
       font-size: 1.5rem;
       text-align: center;
       margin-bottom: 12px;
+    }
+
+    .sector-filters {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .btn-tag {
+      flex: 1;
+      background: #e2e8f0;
+      color: #475569;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-tag.active {
+      background: var(--primary);
+      color: #ffffff;
     }
 
     .controls {
@@ -136,6 +110,20 @@
       align-items: center;
     }
 
+    .badge-progress {
+      font-size: 0.8rem;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: #e2e8f0;
+      color: #334155;
+      font-weight: 600;
+    }
+
+    .badge-progress.complete {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
     .task-list {
       list-style: none;
       padding: 0;
@@ -178,6 +166,17 @@
       font-size: 0.95rem;
     }
 
+    .task-tag {
+      font-size: 0.7rem;
+      font-weight: bold;
+      color: #64748b;
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 8px;
+      text-transform: uppercase;
+    }
+
     .add-form {
       display: flex;
       gap: 6px;
@@ -200,7 +199,6 @@
 </head>
 <body>
 
-  <!-- Logo posicionado antes dos botões -->
   <div class="logo-container">
     <img src="logo.png" alt="Logo RISO" class="logo">
   </div>
@@ -208,19 +206,14 @@
   <h1>Checklist Operacional</h1>
 
   <!-- Filtro por Setor -->
-<div class="sector-filters">
-  <button class="btn-tag active" onclick="setSectorFilter('Tudo')">Tudo</button>
-  <button class="btn-tag" onclick="setSectorFilter('ADM')">ADM</button>
-  <button class="btn-tag" onclick="setSectorFilter('Cozinha')">Cozinha</button>
-  <button class="btn-tag" onclick="setSectorFilter('Salão')">Salão</button>
-</div>
+  <div class="sector-filters">
+    <button class="btn-tag active" onclick="setSectorFilter('Tudo')">Tudo</button>
+    <button class="btn-tag" onclick="setSectorFilter('ADM')">ADM</button>
+    <button class="btn-tag" onclick="setSectorFilter('Cozinha')">Cozinha</button>
+    <button class="btn-tag" onclick="setSectorFilter('Salão')">Salão</button>
+  </div>
 
-<div class="controls">
-  <button class="btn btn-primary" id="toggleViewBtn" onclick="toggleHideCompleted()">Esconder Concluídas</button>
-  <button class="btn btn-danger" onclick="resetChecklist()">Resetar Tudo</button>
-  <button class="btn btn-secondary" onclick="clearLocalStorage()">Limpar Dados</button>
-</div>
-
+  <!-- Botões de Controle (Único Bloco) -->
   <div class="controls">
     <button class="btn btn-primary" id="toggleViewBtn" onclick="toggleHideCompleted()">Esconder Concluídas</button>
     <button class="btn btn-danger" onclick="resetChecklist()">Resetar Tudo</button>
@@ -230,7 +223,7 @@
   <div id="checklistContainer"></div>
 
   <script>
-const initialData = [
+    const initialData = [
       {
         category: "TRÊS DIAS ANTES DE ABRIR",
         tasks: [
@@ -328,6 +321,10 @@ const initialData = [
     let currentSector = "Tudo";
 
     if (!state) {
+      initState();
+    }
+
+    function initState() {
       state = initialData.map((cat, catIdx) => ({
         category: cat.category,
         tasks: cat.tasks.map((t, taskIdx) => ({
@@ -463,8 +460,8 @@ const initialData = [
     function clearLocalStorage() {
       if (confirm("Isso apagará todo o histórico salvo e restaurará as tarefas originais. Confirmar?")) {
         localStorage.removeItem("restaurantChecklistState");
-        state = null;
-        location.reload();
+        initState();
+        render();
       }
     }
 

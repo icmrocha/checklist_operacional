@@ -5,23 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Checklist Operacional RISO</title>
 
-  
   <style>
-
-    .logo-container {
-  text-align: center;
-  margin-bottom: 12px; /* Espaçamento em relação aos botões abaixo */
-}
-
-.logo {
-  max-width: 140px; /* Altere este valor para aumentar ou diminuir a largura do logo */
-  height: auto;
-  display: inline-block;
-}
-
-
-
-    
     :root {
       --bg: #f4f6f8;
       --card-bg: #ffffff;
@@ -40,6 +24,17 @@
       max-width: 600px;
       margin-left: auto;
       margin-right: auto;
+    }
+
+    .logo-container {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .logo {
+      max-width: 140px;
+      height: auto;
+      display: inline-block;
     }
 
     h1 {
@@ -152,23 +147,16 @@
       margin-right: 8px;
       cursor: grab;
     }
-
-    
   </style>
 </head>
 <body>
 
-  <h1>Checklist Operacional</h1>
-
-  <!-- NOVO: Logotipo posicionado logo antes dos botões -->
+  <!-- Logo posicionado antes dos botões -->
   <div class="logo-container">
     <img src="logo.png" alt="Logo RISO" class="logo">
   </div>
 
-  <div class="controls">
-    <button class="btn btn-primary" id="toggleViewBtn" onclick="toggleHideCompleted()">Esconder Concluídas</button>
-    <button class="btn btn-danger" onclick="resetChecklist()">Resetar Tudo</button>
-  </div>
+  <h1>Checklist Operacional</h1>
 
   <div class="controls">
     <button class="btn btn-primary" id="toggleViewBtn" onclick="toggleHideCompleted()">Esconder Concluídas</button>
@@ -182,11 +170,11 @@
       {
         category: "TRÊS DIAS ANTES DE ABRIR",
         tasks: [
-        "CONFIRMAR CALENDÁRIO DA RISO E CARDÁPIO",
-        "FAZER LISTA DE COMPRAS",
-        "FAZER COMPRAS",
-        "HIGIENIZAR E GUARDAR COMPRAS",
-        "LIMPAR COZINHA"
+          "CONFIRMAR CALENDÁRIO DA RISO E CARDÁPIO",
+          "FAZER LISTA DE COMPRAS",
+          "FAZER COMPRAS",
+          "HIGIENIZAR E GUARDAR COMPRAS",
+          "LIMPAR COZINHA"
         ]
       },
       {
@@ -322,7 +310,6 @@
             <span class="task-text">${task.text}</span>
           `;
 
-          // Drag Events
           li.addEventListener("dragstart", handleDragStart);
           li.addEventListener("dragover", handleDragOver);
           li.addEventListener("drop", handleDrop);
@@ -332,7 +319,6 @@
 
         catEl.appendChild(ul);
 
-        // Formulário para adicionar tarefa extra
         const addForm = document.createElement("form");
         addForm.className = "add-form";
         addForm.innerHTML = `
@@ -373,7 +359,6 @@
       }
     }
 
-    // Drag and Drop Logic
     let draggedItem = null;
 
     function handleDragStart(e) {
@@ -399,7 +384,6 @@
       const targetCatIdx = parseInt(targetUl.dataset.catIdx);
       let targetTaskIdx = targetLi ? parseInt(targetLi.dataset.taskIdx) : state[targetCatIdx].tasks.length;
 
-      // Unsplice & Splice
       const [movedTask] = state[draggedItem.catIdx].tasks.splice(draggedItem.taskIdx, 1);
       state[targetCatIdx].tasks.splice(targetTaskIdx, 0, movedTask);
 

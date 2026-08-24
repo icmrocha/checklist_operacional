@@ -4,6 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Checklist Operacional RISO</title>
+
+<!-- NOVO: Logotipo posicionado logo antes dos botões -->
+  <div class="logo-container">
+    <img src="logo.png" alt="Logo RISO" class="logo">
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-primary" id="toggleViewBtn" onclick="toggleHideCompleted()">Esconder Concluídas</button>
+    <button class="btn btn-danger" onclick="resetChecklist()">Resetar Tudo</button>
+  </div>
+
+
+  
   <style>
     :root {
       --bg: #f4f6f8;
@@ -135,6 +148,19 @@
       margin-right: 8px;
       cursor: grab;
     }
+
+
+    .logo-container {
+  text-align: center;
+  margin-bottom: 12px; /* Espaçamento em relação aos botões abaixo */
+}
+
+.logo {
+  max-width: 140px; /* Altere este valor para aumentar ou diminuir a largura do logo */
+  height: auto;
+  display: inline-block;
+}
+    
   </style>
 </head>
 <body>

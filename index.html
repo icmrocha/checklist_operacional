@@ -6,6 +6,55 @@
   <title>Checklist Operacional RISO</title>
 
   <style>
+
+    .sector-filters {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.btn-tag {
+  flex: 1;
+  background: #e2e8f0;
+  color: #475569;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-tag.active {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.badge-progress {
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: #e2e8f0;
+  color: #334155;
+  font-weight: 600;
+}
+
+.badge-progress.complete {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.task-tag {
+  font-size: 0.7rem;
+  font-weight: bold;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  text-transform: uppercase;
+}
+    
     :root {
       --bg: #f4f6f8;
       --card-bg: #ffffff;
@@ -158,6 +207,20 @@
 
   <h1>Checklist Operacional</h1>
 
+  <!-- Filtro por Setor -->
+<div class="sector-filters">
+  <button class="btn-tag active" onclick="setSectorFilter('Tudo')">Tudo</button>
+  <button class="btn-tag" onclick="setSectorFilter('ADM')">ADM</button>
+  <button class="btn-tag" onclick="setSectorFilter('Cozinha')">Cozinha</button>
+  <button class="btn-tag" onclick="setSectorFilter('Salão')">Salão</button>
+</div>
+
+<div class="controls">
+  <button class="btn btn-primary" id="toggleViewBtn" onclick="toggleHideCompleted()">Esconder Concluídas</button>
+  <button class="btn btn-danger" onclick="resetChecklist()">Resetar Tudo</button>
+  <button class="btn btn-secondary" onclick="clearLocalStorage()">Limpar Dados</button>
+</div>
+
   <div class="controls">
     <button class="btn btn-primary" id="toggleViewBtn" onclick="toggleHideCompleted()">Esconder Concluídas</button>
     <button class="btn btn-danger" onclick="resetChecklist()">Resetar Tudo</button>
@@ -167,110 +230,110 @@
   <div id="checklistContainer"></div>
 
   <script>
-    const initialData = [
+const initialData = [
       {
         category: "TRÊS DIAS ANTES DE ABRIR",
         tasks: [
-          "CONFIRMAR CALENDÁRIO DA RISO E CARDÁPIO",
-          "FAZER LISTA DE COMPRAS",
-          "FAZER COMPRAS",
-          "HIGIENIZAR E GUARDAR COMPRAS",
-          "LIMPAR COZINHA"
+          { text: "CONFIRMAR CALENDÁRIO DA RISO E CARDÁPIO", tag: "ADM" },
+          { text: "FAZER LISTA DE COMPRAS", tag: "ADM" },
+          { text: "FAZER COMPRAS", tag: "ADM" },
+          { text: "HIGIENIZAR E GUARDAR COMPRAS", tag: "Cozinha" },
+          { text: "LIMPAR COZINHA", tag: "Cozinha" }
         ]
       },
       {
         category: "DOIS DIAS ANTES DE ABRIR",
         tasks: [
-          "FAZER CALDO DE LEGUMES",
-          "MARINAR LOMBO",
-          "RALAR QUEIJO PARMESÃO",
-          "TRIÂNGULO AMOROSO",
-          "BASE DO ARANCINI",
-          "COOKIE",
-          "CORTAR E PORCIONAR AIPIM",
-          "LIMPAR LINGUIÇA TOSCANA",
-          "CHÁ DE HIBISCO"
+          { text: "FAZER CALDO DE LEGUMES", tag: "Cozinha" },
+          { text: "MARINAR LOMBO", tag: "Cozinha" },
+          { text: "RALAR QUEIJO PARMESÃO", tag: "Cozinha" },
+          { text: "TRIÂNGULO AMOROSO", tag: "Cozinha" },
+          { text: "BASE DO ARANCINI", tag: "Cozinha" },
+          { text: "COOKIE", tag: "Cozinha" },
+          { text: "CORTAR E PORCIONAR AIPIM", tag: "Cozinha" },
+          { text: "LIMPAR LINGUIÇA TOSCANA", tag: "Cozinha" },
+          { text: "CHÁ DE HIBISCO", tag: "Cozinha" }
         ]
       },
       {
         category: "NO DIA ANTERIOR",
         tasks: [
-          "ENROLAR ARANCINI E PORCIONAR",
-          "RAGU DE LINGUIÇA",
-          "MOLHO BOLONHESA",
-          "CORTAR E PORCIONAR COUVE",
-          "CORTAR E PORCIONAR COUVE-FLOR",
-          "CORTAR E PORCIONAR COGUS",
-          "CORTAR E PORCIONAR QUEIJO COALHO",
-          "ASSAR LOMBO E PORCIONAR",
-          "BRIGADEIRO",
-          "MANTEIGA DE ALHO",
-          "PORCIONAR FRUTAS DOS SUCOS E DA SANGRIA",
-          "CARREGAR UTENSÍLIOS ELÉTRICOS (JBL, IMPRESSORAS)",
-          "POSTAGEM NO INSTAGRAM DA RISO",
-          "VERIFICAR CARDÁPIOS E ATUALIZAR/IMPRIMIR",
-          "IMPRIMIR RISOGOODS",
-          "CONFIRMAR NÚMERO DE RESERVAS",
-          "VERIFICAR E ATUALIZAR PEDIDON"
-          
+          { text: "ENROLAR ARANCINI E PORCIONAR", tag: "Cozinha" },
+          { text: "RAGU DE LINGUIÇA", tag: "Cozinha" },
+          { text: "MOLHO BOLONHESA", tag: "Cozinha" },
+          { text: "CORTAR E PORCIONAR COUVE", tag: "Cozinha" },
+          { text: "CORTAR E PORCIONAR COUVE-FLOR", tag: "Cozinha" },
+          { text: "CORTAR E PORCIONAR COGUS", tag: "Cozinha" },
+          { text: "CORTAR E PORCIONAR QUEIJO COALHO", tag: "Cozinha" },
+          { text: "ASSAR LOMBO E PORCIONAR", tag: "Cozinha" },
+          { text: "BRIGADEIRO", tag: "Cozinha" },
+          { text: "MANTEIGA DE ALHO", tag: "Cozinha" },
+          { text: "PORCIONAR FRUTAS DOS SUCOS E DA SANGRIA", tag: "Cozinha" },
+          { text: "CARREGAR UTENSÍLIOS ELÉTRICOS (JBL, IMPRESSORAS)", tag: "ADM" },
+          { text: "POSTAGEM NO INSTAGRAM DA RISO", tag: "ADM" },
+          { text: "VERIFICAR CARDÁPIOS E ATUALIZAR/IMPRIMIR", tag: "ADM" },
+          { text: "IMPRIMIR RISOGOODS", tag: "ADM" },
+          { text: "CONFIRMAR NÚMERO DE RESERVAS", tag: "ADM" },
+          { text: "VERIFICAR E ATUALIZAR PEDIDON", tag: "ADM" }
         ]
       },
       {
         category: "NO DIA — ATÉ 10HS",
         tasks: [
-          "VARRER O QUINTAL",
-          "ORGANIZAR MESAS",
-          "LIMPAR BANHEIROS",
-          "FAZER 1 MANGARACUJÁ",
-          "FAZER 1 ABACAXIQUE",
-          "PORCIONAR CIBOULETTES",
-          "PREPARAR ÁREA DE SUCOS E DRINKS",
-          "PREPARAR ÁREA DE FINALIZAÇÃO",
-          "ASSAR COOKIES",
-          "BASE RISO"
+          { text: "VARRER O QUINTAL", tag: "Salão" },
+          { text: "ORGANIZAR MESAS", tag: "Salão" },
+          { text: "LIMPAR BANHEIROS", tag: "Salão" },
+          { text: "FAZER 1 MANGARACUJÁ", tag: "Cozinha" },
+          { text: "FAZER 1 ABACAXIQUE", tag: "Cozinha" },
+          { text: "PORCIONAR CIBOULETTES", tag: "Cozinha" },
+          { text: "PREPARAR ÁREA DE SUCOS E DRINKS", tag: "Cozinha" },
+          { text: "PREPARAR ÁREA DE FINALIZAÇÃO", tag: "Cozinha" },
+          { text: "ASSAR COOKIES", tag: "Cozinha" },
+          { text: "BASE RISO", tag: "Cozinha" }
         ]
       },
       {
         category: "NO DIA — ATÉ MEIO-DIA",
         tasks: [
-          "BANCADAS LIMPAS E ESCORREDOR VAZIO",
-          "LIXEIRAS INTERNAS VAZIAS",
-          "ABASTECER E LIGAR MÁQUINA DE GELO",
-          "ABASTECER FRITADEIRA",
-          "PRÉ AQUECER CALDO E ABASTECER PANELA ELÉTRICA",
-          "ALMOÇAR",
-          "LIGAR APARELHOS (CHECAR BOBINAS E LOGIN PEDIDON)",
-          "INICIAR PLAYLIST"
+          { text: "BANCADAS LIMPAS E ESCORREDOR VAZIO", tag: "Cozinha" },
+          { text: "LIXEIRAS INTERNAS VAZIAS", tag: "Cozinha" },
+          { text: "ABASTECER E LIGAR MÁQUINA DE GELO", tag: "Cozinha" },
+          { text: "ABASTECER FRITADEIRA", tag: "Cozinha" },
+          { text: "PRÉ AQUECER CALDO E ABASTECER PANELA ELÉTRICA", tag: "Cozinha" },
+          { text: "ALMOÇAR", tag: "ADM" },
+          { text: "LIGAR APARELHOS (CHECAR BOBINAS E LOGIN PEDIDON)", tag: "Cozinha" },
+          { text: "INICIAR PLAYLIST", tag: "Salão" }
         ]
       },
       {
         category: "AO FECHAR",
         tasks: [
-          "ESVAZIAR LIXEIRAS DOS BANHEIROS",
-          "LIMPAR LIXEIRAS DA COZINHA E LAVAR"
+          { text: "ESVAZIAR LIXEIRAS DOS BANHEIROS", tag: "Salão" },
+          { text: "LIMPAR LIXEIRAS DA COZINHA E LAVAR", tag: "Cozinha" }
         ]
       },
       {
         category: "NA SEGUNDA-FEIRA SEGUINTE",
         tasks: [
-          "PAGAR FORNECEDORES (COGUS, PÃES, ETC)",
-          "FAZER PEDIDOS FORNECEDORES",
-          "FAZER PEDIDOS MERCADO LIVRE (SE APLICÁVEL)",
-          "FAZER CONTABILIDADE"
-          
+          { text: "PAGAR FORNECEDORES (COGUS, PÃES, ETC)", tag: "ADM" },
+          { text: "FAZER PEDIDOS FORNECEDORES", tag: "ADM" },
+          { text: "FAZER PEDIDOS MERCADO LIVRE (SE APLICÁVEL)", tag: "ADM" },
+          { text: "FAZER CONTABILIDADE", tag: "ADM" }
         ]
       }
     ];
 
     let state = JSON.parse(localStorage.getItem("restaurantChecklistState")) || null;
     let hideCompleted = false;
+    let currentSector = "Tudo";
 
     if (!state) {
       state = initialData.map((cat, catIdx) => ({
         category: cat.category,
         tasks: cat.tasks.map((t, taskIdx) => ({
           id: `${catIdx}-${taskIdx}-${Date.now()}`,
-          text: t,
+          text: t.text,
+          tag: t.tag || "Cozinha",
           done: false
         }))
       }));
@@ -279,6 +342,14 @@
 
     function saveState() {
       localStorage.setItem("restaurantChecklistState", JSON.stringify(state));
+    }
+
+    function setSectorFilter(sector) {
+      currentSector = sector;
+      document.querySelectorAll(".btn-tag").forEach(btn => {
+        btn.classList.toggle("active", btn.innerText === sector);
+      });
+      render();
     }
 
     function render() {
@@ -294,12 +365,25 @@
       }
 
       state.forEach((cat, catIdx) => {
+        const filteredTasks = cat.tasks.filter(t => currentSector === "Tudo" || t.tag === currentSector);
+
+        if (filteredTasks.length === 0 && currentSector !== "Tudo") return;
+
         const catEl = document.createElement("div");
         catEl.className = "category";
 
+        const totalTasks = filteredTasks.length;
+        const completedTasks = filteredTasks.filter(t => t.done).length;
+        const isComplete = totalTasks > 0 && totalTasks === completedTasks;
+
         const titleEl = document.createElement("div");
         titleEl.className = "category-title";
-        titleEl.innerText = cat.category;
+        titleEl.innerHTML = `
+          <span>${cat.category}</span>
+          <span class="badge-progress ${isComplete ? 'complete' : ''}">
+            ${completedTasks}/${totalTasks} ${isComplete ? '✓' : ''}
+          </span>
+        `;
         catEl.appendChild(titleEl);
 
         const ul = document.createElement("ul");
@@ -307,6 +391,8 @@
         ul.dataset.catIdx = catIdx;
 
         cat.tasks.forEach((task, taskIdx) => {
+          if (currentSector !== "Tudo" && task.tag !== currentSector) return;
+
           const li = document.createElement("li");
           li.className = `task-item ${task.done ? 'completed' : ''}`;
           li.draggable = true;
@@ -317,6 +403,7 @@
             <span class="drag-handle">⠿</span>
             <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleTask(${catIdx}, ${taskIdx})">
             <span class="task-text">${task.text}</span>
+            <span class="task-tag">${task.tag || 'Cozinha'}</span>
           `;
 
           li.addEventListener("dragstart", handleDragStart);
@@ -338,7 +425,12 @@
           e.preventDefault();
           const input = addForm.querySelector("input");
           if (input.value.trim()) {
-            cat.tasks.push({ id: Date.now().toString(), text: input.value.trim(), done: false });
+            cat.tasks.push({ 
+              id: Date.now().toString(), 
+              text: input.value.trim(), 
+              tag: currentSector === "Tudo" ? "Cozinha" : currentSector, 
+              done: false 
+            });
             saveState();
             render();
           }
@@ -368,14 +460,13 @@
       }
     }
 
-
-  function clearLocalStorage() {
-  if (confirm("Isso apagará todo o histórico salvo e restaurará as tarefas originais. Confirmar?")) {
-    localStorage.removeItem("restaurantChecklistState");
-    state = null; // Reseta o estado em memória
-    location.reload(); // Recarrega a página para recriar os dados iniciais
-  }
-}
+    function clearLocalStorage() {
+      if (confirm("Isso apagará todo o histórico salvo e restaurará as tarefas originais. Confirmar?")) {
+        localStorage.removeItem("restaurantChecklistState");
+        state = null;
+        location.reload();
+      }
+    }
 
     let draggedItem = null;
 

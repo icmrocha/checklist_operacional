@@ -297,7 +297,7 @@
       const statusEl = document.getElementById("syncStatus");
 
       try {
-        const response = await fetch(`${API_URL}?idServico=${encodeURIComponent(idServicoAtual)}`);
+        const response = await fetch(API_URL);
         const data = await response.json();
 
         if (Array.isArray(data) && data.length > 0) {
@@ -351,7 +351,6 @@
       });
     }
 
-    // Salva uma nova tarefa permanentemente na aba MASTER
     function addNewTaskToSheets(categoria, textoTarefa, tag) {
       const statusEl = document.getElementById("syncStatus");
       statusEl.innerText = "Salvando nova tarefa na aba MASTER...";
@@ -516,7 +515,6 @@
 
         catEl.appendChild(ul);
 
-        // Formulário para adicionar nova tarefa na categoria
         const addForm = document.createElement("form");
         addForm.className = "add-form";
         addForm.innerHTML = `
@@ -538,7 +536,6 @@
           const tag = select.value;
 
           if (texto) {
-            // Adiciona localmente para feedback instantâneo
             cat.tasks.push({ 
               id: Date.now().toString(), 
               text: texto, 
@@ -548,7 +545,6 @@
             saveState();
             render();
 
-            // Salva na aba MASTER da planilha
             addNewTaskToSheets(cat.category, texto, tag);
           }
         };

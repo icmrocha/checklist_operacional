@@ -211,28 +211,6 @@
       text-transform: uppercase;
     }
 
-    .add-form {
-      display: flex;
-      gap: 6px;
-      margin-top: 8px;
-    }
-
-    .add-form input {
-      flex: 1;
-      padding: 8px;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-    }
-
-    .add-form select {
-      padding: 8px;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      background: #fff;
-      font-size: 0.85rem;
-      color: var(--text);
-    }
-
     .drag-handle {
       color: #cbd5e1;
       margin-right: 8px;
@@ -261,7 +239,7 @@
   <!-- Controles Principais -->
   <div class="controls">
     <button class="btn btn-primary" id="toggleViewBtn" onclick="toggleHideCompleted()">Esconder Concluídas</button>
-    <button class="btn btn-danger" onclick="resetChecklist()">Resetar Tudo</button>
+    <button class="btn btn-danger" onclick="resetChecklist()">Iniciar Novo Ciclo</button>
     <button class="btn btn-secondary" onclick="fetchMasterFromSheets()">Atualizar Agora</button>
   </div>
 
@@ -270,25 +248,33 @@
 
   <script>
     /* ==========================================================================
-       5. CONFIGURAÇÃO DA API DO GOOGLE APPS SCRIPT
+       5. CONFIGURAÇÃO DA API DO GOOGLE APPS SCRIPT E VARIÁVEIS GLOBAIS
        ========================================================================== */
     const API_URL = "https://script.google.com/macros/s/AKfycbzSBj1HDH8XdljYIJfZAhlljiVray3xwl6AP9NBU1J9nFJT_db4ng8sNT0mtu3KzkGm/exec";
 
     let state = JSON.parse(localStorage.getItem("restaurantChecklistState")) || null;
     let hideCompleted = false;
     let currentSector = "Tudo";
-    let idServicoAtual = localStorage.getItem("restaurantServiceId") || ("SERV_" + Date.now());
+    let isSyncing = false; // Trava contra atropelamento de requisicões
 
-    localStorage.setItem("restaurantServiceId", idServicoAtual);
+    let idServicoAtual = localStorage.getItem("restaurantServiceId");
+    if (!idServicoAtual) {
+      idServicoAtual = "SERV_" + Date.now();
+      localStorage.setItem("restaurantServiceId", idServicoAtual);
+    }
 
     /* ==========================================================================
-       6. COMUNICAÇÃO COM O GOOGLE SHEETS (FETCH)
+       6. COMUNICAÇÃO COM O GOOGLE SHEETS (FETCH & POST)
        ========================================================================== */
     async function fetchMasterFromSheets() {
+      // Se houver uma gravação recente acontecendo, bloqueia o fetch temporariamente
+      if (isSyncing) return;
+
       const statusEl = document.getElementById("syncStatus");
 
       try {
-        const response = await fetch(API_URL);
+        // Envia o idServico na URL para filtrar apenas logs do ciclo ativo no Sheets
+        const response = await fetch(`${API_URL}?idServico=${encodeURIComponent(idServicoAtual)}`);
         const data = await response.json();
 
         if (Array.isArray(data) && data.length > 0) {
@@ -316,6 +302,7 @@
     function sendLogToSheets(categoria, tarefa, tag, status, horarioConclusao) {
       const statusEl = document.getElementById("syncStatus");
       statusEl.innerText = "Enviando alteração...";
+      isSyncing = true; // Ativa a trava de segurança
 
       fetch(API_URL, {
         method: "POST",
@@ -332,10 +319,13 @@
       })
       .then(() => {
         statusEl.innerText = "✓ Salvo no Google Sheets";
+        // Desativa a trava 3 segundos após a gravação para dar tempo do Sheets processar
+        setTimeout(() => { isSyncing = false; }, 3000);
       })
       .catch(err => {
         console.error("Erro ao enviar log:", err);
         statusEl.innerText = "⚠ Erro de conexão (salvo localmente)";
+        isSyncing = false;
       });
     }
 
@@ -387,7 +377,8 @@
     }
 
     function resetChecklist() {
-      if (confirm("Deseja desmarcar todas as tarefas e iniciar uma nova rodada de serviço?")) {
+      if (confirm("Deseja desmarcar todas as tarefas e iniciar um novo ciclo de serviço no Sheets?")) {
+        // Gera um novo ID de serviço para que os registros do LOG fiquem isolados do ciclo anterior
         idServicoAtual = "SERV_" + Date.now();
         localStorage.setItem("restaurantServiceId", idServicoAtual);
 
@@ -472,37 +463,6 @@
         });
 
         catEl.appendChild(ul);
-
-        const addForm = document.createElement("form");
-        addForm.className = "add-form";
-        addForm.innerHTML = `
-          <input type="text" placeholder="+ Adicionar tarefa..." required />
-          <select>
-            <option value="Cozinha" ${currentSector === "Cozinha" ? "selected" : ""}>Cozinha</option>
-            <option value="ADM" ${currentSector === "ADM" ? "selected" : ""}>ADM</option>
-            <option value="Salão" ${currentSector === "Salão" ? "selected" : ""}>Salão</option>
-          </select>
-          <button class="btn btn-secondary" type="submit">+</button>
-        `;
-
-        addForm.onsubmit = (e) => {
-          e.preventDefault();
-          const input = addForm.querySelector("input");
-          const select = addForm.querySelector("select");
-
-          if (input.value.trim()) {
-            cat.tasks.push({ 
-              id: Date.now().toString(), 
-              text: input.value.trim(), 
-              tag: select.value, 
-              done: false 
-            });
-            saveState();
-            render();
-          }
-        };
-        catEl.appendChild(addForm);
-
         container.appendChild(catEl);
       });
     }
@@ -542,13 +502,15 @@
       render();
     }
 
-    // Inicialização
+    /* ==========================================================================
+       10. INICIALIZAÇÃO E INTERVALO DE CONSULTA AUTOMÁTICA
+       ========================================================================== */
     if (state) {
       render();
     }
     fetchMasterFromSheets();
 
-    // Consulta a planilha a cada 10 segundos automaticamente
+    // Consulta o Sheets a cada 10 segundos automaticamente para atualizar telas secundárias
     setInterval(fetchMasterFromSheets, 10000);
   </script>
 </body>

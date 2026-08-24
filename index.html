@@ -49,6 +49,15 @@
       margin-bottom: 12px;
     }
 
+    /* Indicador de carregamento/sincronização */
+    .sync-status {
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
     /* ==========================================================================
        3. BOTÕES E FILTROS DE SETOR (ADM, Cozinha, Salão)
        ========================================================================== */
@@ -161,7 +170,6 @@
       opacity: 0.5;
     }
 
-    /* Estilo do texto riscado nas tarefas marcadas */
     .task-item.completed .task-text {
       text-decoration: line-through;
     }
@@ -183,14 +191,13 @@
       font-size: 0.95rem;
     }
 
-    /* Formatação da data/hora de conclusão */
     .task-meta {
       font-size: 0.75rem;
       color: #059669;
       font-weight: 600;
       display: block;
       margin-top: 2px;
-      text-decoration: none !important; /* Impede que a data fique riscada */
+      text-decoration: none !important;
     }
 
     .task-tag {
@@ -204,7 +211,6 @@
       text-transform: uppercase;
     }
 
-    /* Form para adicionar nova tarefa */
     .add-form {
       display: flex;
       gap: 6px;
@@ -242,6 +248,7 @@
   </div>
 
   <h1>Checklist Operacional</h1>
+  <div id="syncStatus" class="sync-status">Conectando ao Google Sheets...</div>
 
   <!-- Filtro por Setor (ADM, Cozinha, Salão) -->
   <div class="sector-filters">
@@ -255,7 +262,7 @@
   <div class="controls">
     <button class="btn btn-primary" id="toggleViewBtn" onclick="toggleHideCompleted()">Esconder Concluídas</button>
     <button class="btn btn-danger" onclick="resetChecklist()">Resetar Tudo</button>
-    <button class="btn btn-secondary" onclick="clearLocalStorage()">Limpar Dados</button>
+    <button class="btn btn-secondary" onclick="fetchMasterFromSheets()">Atualizar do Sheets</button>
   </div>
 
   <!-- Onde o checklist será montado pelo JavaScript -->
@@ -263,124 +270,78 @@
 
   <script>
     /* ==========================================================================
-       5. DADOS INICIAIS BASE (Utilizado no primeiro carregamento ou reset total)
+       5. CONFIGURAÇÃO DA API DO GOOGLE APPS SCRIPT
        ========================================================================== */
-    const initialData = [
-      {
-        category: "TRÊS DIAS ANTES DE ABRIR",
-        tasks: [
-          { text: "CONFIRMAR CALENDÁRIO DA RISO E CARDÁPIO", tag: "ADM" },
-          { text: "FAZER LISTA DE COMPRAS", tag: "ADM" },
-          { text: "FAZER COMPRAS", tag: "ADM" },
-          { text: "HIGIENIZAR E GUARDAR COMPRAS", tag: "Cozinha" },
-          { text: "LIMPAR COZINHA", tag: "Cozinha" }
-        ]
-      },
-      {
-        category: "DOIS DIAS ANTES DE ABRIR",
-        tasks: [
-          { text: "FAZER CALDO DE LEGUMES", tag: "Cozinha" },
-          { text: "MARINAR LOMBO", tag: "Cozinha" },
-          { text: "RALAR QUEIJO PARMESÃO", tag: "Cozinha" },
-          { text: "TRIÂNGULO AMOROSO", tag: "Cozinha" },
-          { text: "BASE DO ARANCINI", tag: "Cozinha" },
-          { text: "COOKIE", tag: "Cozinha" },
-          { text: "CORTAR E PORCIONAR AIPIM", tag: "Cozinha" },
-          { text: "LIMPAR LINGUIÇA TOSCANA", tag: "Cozinha" },
-          { text: "CHÁ DE HIBISCO", tag: "Cozinha" }
-        ]
-      },
-      {
-        category: "NO DIA ANTERIOR",
-        tasks: [
-          { text: "ENROLAR ARANCINI E PORCIONAR", tag: "Cozinha" },
-          { text: "RAGU DE LINGUIÇA", tag: "Cozinha" },
-          { text: "MOLHO BOLONHESA", tag: "Cozinha" },
-          { text: "CORTAR E PORCIONAR COUVE", tag: "Cozinha" },
-          { text: "CORTAR E PORCIONAR COUVE-FLOR", tag: "Cozinha" },
-          { text: "CORTAR E PORCIONAR COGUS", tag: "Cozinha" },
-          { text: "CORTAR E PORCIONAR QUEIJO COALHO", tag: "Cozinha" },
-          { text: "ASSAR LOMBO E PORCIONAR", tag: "Cozinha" },
-          { text: "BRIGADEIRO", tag: "Cozinha" },
-          { text: "MANTEIGA DE ALHO", tag: "Cozinha" },
-          { text: "PORCIONAR FRUTAS DOS SUCOS E DA SANGRIA", tag: "Cozinha" },
-          { text: "CARREGAR UTENSÍLIOS ELÉTRICOS (JBL, IMPRESSORAS)", tag: "ADM" },
-          { text: "POSTAGEM NO INSTAGRAM DA RISO", tag: "ADM" },
-          { text: "VERIFICAR CARDÁPIOS E ATUALIZAR/IMPRIMIR", tag: "ADM" },
-          { text: "IMPRIMIR RISOGOODS", tag: "ADM" },
-          { text: "CONFIRMAR NÚMERO DE RESERVAS", tag: "ADM" },
-          { text: "VERIFICAR E ATUALIZAR PEDIDON", tag: "ADM" }
-        ]
-      },
-      {
-        category: "NO DIA — ATÉ 10HS",
-        tasks: [
-          { text: "VARRER O QUINTAL", tag: "Salão" },
-          { text: "ORGANIZAR MESAS", tag: "Salão" },
-          { text: "LIMPAR BANHEIROS", tag: "Salão" },
-          { text: "FAZER 1 MANGARACUJÁ", tag: "Cozinha" },
-          { text: "FAZER 1 ABACAXIQUE", tag: "Cozinha" },
-          { text: "PORCIONAR CIBOULETTES", tag: "Cozinha" },
-          { text: "PREPARAR ÁREA DE SUCOS E DRINKS", tag: "Cozinha" },
-          { text: "PREPARAR ÁREA DE FINALIZAÇÃO", tag: "Cozinha" },
-          { text: "ASSAR COOKIES", tag: "Cozinha" },
-          { text: "BASE RISO", tag: "Cozinha" }
-        ]
-      },
-      {
-        category: "NO DIA — ATÉ MEIO-DIA",
-        tasks: [
-          { text: "BANCADAS LIMPAS E ESCORREDOR VAZIO", tag: "Cozinha" },
-          { text: "LIXEIRAS INTERNAS VAZIAS", tag: "Cozinha" },
-          { text: "ABASTECER E LIGAR MÁQUINA DE GELO", tag: "Cozinha" },
-          { text: "ABASTECER FRITADEIRA", tag: "Cozinha" },
-          { text: "PRÉ AQUECER CALDO E ABASTECER PANELA ELÉTRICA", tag: "Cozinha" },
-          { text: "ALMOÇAR", tag: "ADM" },
-          { text: "LIGAR APARELHOS (CHECAR BOBINAS E LOGIN PEDIDON)", tag: "Cozinha" },
-          { text: "INICIAR PLAYLIST", tag: "Salão" }
-        ]
-      },
-      {
-        category: "AO FECHAR",
-        tasks: [
-          { text: "ESVAZIAR LIXEIRAS DOS BANHEIROS", tag: "Salão" },
-          { text: "LIMPAR LIXEIRAS DA COZINHA E LAVAR", tag: "Cozinha" }
-        ]
-      },
-      {
-        category: "NA SEGUNDA-FEIRA SEGUINTE",
-        tasks: [
-          { text: "PAGAR FORNECEDORES (COGUS, PÃES, ETC)", tag: "ADM" },
-          { text: "FAZER PEDIDOS FORNECEDORES", tag: "ADM" },
-          { text: "FAZER PEDIDOS MERCADO LIVRE (SE APLICÁVEL)", tag: "ADM" },
-          { text: "FAZER CONTABILIDADE", tag: "ADM" }
-        ]
-      }
-    ];
+    const API_URL = "https://script.google.com/macros/s/AKfycbzSBj1HDH8XdljYIJfZAhlljiVray3xwl6AP9NBU1J9nFJT_db4ng8sNT0mtu3KzkGm/exec";
 
-    /* ==========================================================================
-       6. ESTADO DA APLICAÇÃO E VARIÁVEIS GLOBAIS
-       ========================================================================== */
     let state = JSON.parse(localStorage.getItem("restaurantChecklistState")) || null;
     let hideCompleted = false;
     let currentSector = "Tudo";
+    let idServicoAtual = localStorage.getItem("restaurantServiceId") || ("SERV_" + Date.now());
 
-    // Se não houver dados salvos no navegador, inicializa a partir de initialData
-    if (!state) {
-      initState();
+    localStorage.setItem("restaurantServiceId", idServicoAtual);
+
+    /* ==========================================================================
+       6. COMUNICAÇÃO COM O GOOGLE SHEETS (FETCH)
+       ========================================================================== */
+    // Busca a lista da aba MASTER no Google Sheets
+    async function fetchMasterFromSheets() {
+      const statusEl = document.getElementById("syncStatus");
+      statusEl.innerText = "Buscando dados da aba MASTER...";
+
+      try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+
+        if (Array.isArray(data) && data.length > 0) {
+          state = data.map((cat, catIdx) => ({
+            category: cat.category,
+            tasks: cat.tasks.map((t, taskIdx) => ({
+              id: `${catIdx}-${taskIdx}-${Date.now()}`,
+              text: t.text,
+              tag: t.tag || "Cozinha",
+              done: false
+            }))
+          }));
+          
+          saveState();
+          statusEl.innerText = "✓ Sincronizado com Google Sheets";
+          render();
+        } else {
+          statusEl.innerText = "⚠ Planilha vazia ou sem dados na aba MASTER.";
+        }
+      } catch (error) {
+        console.error("Erro ao buscar dados:", error);
+        statusEl.innerText = "⚠ Usando cópia local (offline)";
+        if (!state) initStateFallback();
+      }
     }
 
-    function initState() {
-      state = initialData.map((cat, catIdx) => ({
-        category: cat.category,
-        tasks: cat.tasks.map((t, taskIdx) => ({
-          id: `${catIdx}-${taskIdx}-${Date.now()}`,
-          text: t.text,
-          tag: t.tag || "Cozinha",
-          done: false
-        }))
-      }));
-      saveState();
+    // Envia o registro de alteração para a aba LOG do Google Sheets
+    function sendLogToSheets(categoria, tarefa, tag, status, horarioConclusao) {
+      const statusEl = document.getElementById("syncStatus");
+      statusEl.innerText = "Salvando na nuvem...";
+
+      fetch(API_URL, {
+        method: "POST",
+        mode: "no-cors", // Garante envio direto sem bloqueio de CORS no navegador
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          idServico: idServicoAtual,
+          categoria: categoria,
+          tarefa: tarefa,
+          tag: tag,
+          status: status,
+          horarioConclusao: horarioConclusao
+        })
+      })
+      .then(() => {
+        statusEl.innerText = "✓ Alteração salva no Google Sheets";
+      })
+      .catch(err => {
+        console.error("Erro ao enviar log:", err);
+        statusEl.innerText = "⚠ Erro de conexão (salvo localmente)";
+      });
     }
 
     function saveState() {
@@ -388,14 +349,16 @@
     }
 
     /* ==========================================================================
-       7. GERENCIAMENTO DE TAREFAS E MUDANÇA DE STATUS
+       7. GERENCIAMENTO DE TAREFAS
        ========================================================================== */
     function toggleTask(catIdx, taskIdx) {
       const task = state[catIdx].tasks[taskIdx];
+      const categoria = state[catIdx].category;
       task.done = !task.done;
       
+      let horarioFormatado = "";
+
       if (task.done) {
-        // Gera data e hora formatados: dd/mm/yy às hh:mm
         const agora = new Date();
         const dia = String(agora.getDate()).padStart(2, '0');
         const mes = String(agora.getMonth() + 1).padStart(2, '0');
@@ -403,13 +366,17 @@
         const horas = String(agora.getHours()).padStart(2, '0');
         const minutos = String(agora.getMinutes()).padStart(2, '0');
 
-        task.completedAt = `Concluído ${dia}/${mes}/${ano} às ${horas}:${minutos}`;
+        horarioFormatado = `Concluído ${dia}/${mes}/${ano} às ${horas}:${minutos}`;
+        task.completedAt = horarioFormatado;
       } else {
-        delete task.completedAt; // Apaga a data se o item for desmarcado
+        delete task.completedAt;
       }
 
       saveState();
       render();
+
+      // Envia os dados para a aba LOG
+      sendLogToSheets(categoria, task.text, task.tag, task.done, horarioFormatado);
     }
 
     function setSectorFilter(sector) {
@@ -426,32 +393,28 @@
     }
 
     function resetChecklist() {
-      if (confirm("Deseja desmarcar todas as tarefas para o próximo ciclo?")) {
+      if (confirm("Deseja desmarcar todas as tarefas e iniciar uma nova rodada de serviço?")) {
+        idServicoAtual = "SERV_" + Date.now();
+        localStorage.setItem("restaurantServiceId", idServicoAtual);
+
         state.forEach(cat => cat.tasks.forEach(t => {
           t.done = false;
           delete t.completedAt;
         }));
+        
         saveState();
         render();
-      }
-    }
-
-    function clearLocalStorage() {
-      if (confirm("Isso apagará todo o histórico salvo e restaurará as tarefas originais. Confirmar?")) {
-        localStorage.removeItem("restaurantChecklistState");
-        initState();
-        render();
+        document.getElementById("syncStatus").innerText = "Novo ciclo de serviço iniciado!";
       }
     }
 
     /* ==========================================================================
-       8. FUNÇÃO DE RENDERIZAÇÃO DA INTERFACE (INTERFACE GRAFICA)
+       8. FUNÇÃO DE RENDERIZAÇÃO DA INTERFACE
        ========================================================================== */
     function render() {
       const container = document.getElementById("checklistContainer");
       container.innerHTML = "";
 
-      // Alterna o estilo da página entre mostrar/esconder concluídas
       if (hideCompleted) {
         document.body.classList.add("hide-completed");
         document.getElementById("toggleViewBtn").innerText = "Mostrar Todas";
@@ -460,18 +423,16 @@
         document.getElementById("toggleViewBtn").innerText = "Esconder Concluídas";
       }
 
-      // Renderiza cada categoria
+      if (!state) return;
+
       state.forEach((cat, catIdx) => {
-        // Filtra as tarefas pelo setor ativo (Tudo, ADM, Cozinha, Salão)
         const filteredTasks = cat.tasks.filter(t => currentSector === "Tudo" || t.tag === currentSector);
 
-        // Se o setor filtrado não tiver tarefas nesta categoria, esconde o bloco da categoria
         if (filteredTasks.length === 0 && currentSector !== "Tudo") return;
 
         const catEl = document.createElement("div");
         catEl.className = "category";
 
-        // Cálculo de progresso por etapa
         const totalTasks = filteredTasks.length;
         const completedTasks = filteredTasks.filter(t => t.done).length;
         const isComplete = totalTasks > 0 && totalTasks === completedTasks;
@@ -490,7 +451,6 @@
         ul.className = "task-list";
         ul.dataset.catIdx = catIdx;
 
-        // Renderiza cada tarefa individual
         cat.tasks.forEach((task, taskIdx) => {
           if (currentSector !== "Tudo" && task.tag !== currentSector) return;
 
@@ -510,7 +470,6 @@
             <span class="task-tag">${task.tag || 'Cozinha'}</span>
           `;
 
-          // Eventos para funcionalidade de arrastar e soltar (Drag & Drop)
           li.addEventListener("dragstart", handleDragStart);
           li.addEventListener("dragover", handleDragOver);
           li.addEventListener("drop", handleDrop);
@@ -520,7 +479,6 @@
 
         catEl.appendChild(ul);
 
-        // Form para adicionar nova tarefa na etapa atual
         const addForm = document.createElement("form");
         addForm.className = "add-form";
         addForm.innerHTML = `
@@ -590,8 +548,11 @@
       render();
     }
 
-    // Inicialização da tela ao carregar o arquivo
-    render();
+    // Inicializa buscando dados diretamente da aba MASTER no Google Sheets
+    if (state) {
+      render();
+    }
+    fetchMasterFromSheets();
   </script>
 </body>
 </html>

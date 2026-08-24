@@ -211,6 +211,31 @@
       text-transform: uppercase;
     }
 
+    .add-form {
+      display: flex;
+      gap: 6px;
+      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border);
+    }
+
+    .add-form input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    .add-form select {
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+
     .drag-handle {
       color: #cbd5e1;
       margin-right: 8px;
@@ -255,7 +280,7 @@
     let state = JSON.parse(localStorage.getItem("restaurantChecklistState")) || null;
     let hideCompleted = false;
     let currentSector = "Tudo";
-    let isSyncing = false; // Trava contra atropelamento de requisicões
+    let isSyncing = false;
 
     let idServicoAtual = localStorage.getItem("restaurantServiceId");
     if (!idServicoAtual) {
@@ -264,16 +289,14 @@
     }
 
     /* ==========================================================================
-       6. COMUNICAÇÃO COM O GOOGLE SHEETS (FETCH & POST)
+       6. COMUNICAÇÃO COM O GOOGLE SHEETS
        ========================================================================== */
     async function fetchMasterFromSheets() {
-      // Se houver uma gravação recente acontecendo, bloqueia o fetch temporariamente
       if (isSyncing) return;
 
       const statusEl = document.getElementById("syncStatus");
 
       try {
-        // Envia o idServico na URL para filtrar apenas logs do ciclo ativo no Sheets
         const response = await fetch(`${API_URL}?idServico=${encodeURIComponent(idServicoAtual)}`);
         const data = await response.json();
 
@@ -302,7 +325,7 @@
     function sendLogToSheets(categoria, tarefa, tag, status, horarioConclusao) {
       const statusEl = document.getElementById("syncStatus");
       statusEl.innerText = "Enviando alteração...";
-      isSyncing = true; // Ativa a trava de segurança
+      isSyncing = true;
 
       fetch(API_URL, {
         method: "POST",
@@ -319,12 +342,42 @@
       })
       .then(() => {
         statusEl.innerText = "✓ Salvo no Google Sheets";
-        // Desativa a trava 3 segundos após a gravação para dar tempo do Sheets processar
         setTimeout(() => { isSyncing = false; }, 3000);
       })
       .catch(err => {
         console.error("Erro ao enviar log:", err);
         statusEl.innerText = "⚠ Erro de conexão (salvo localmente)";
+        isSyncing = false;
+      });
+    }
+
+    // Salva uma nova tarefa permanentemente na aba MASTER
+    function addNewTaskToSheets(categoria, textoTarefa, tag) {
+      const statusEl = document.getElementById("syncStatus");
+      statusEl.innerText = "Salvando nova tarefa na aba MASTER...";
+      isSyncing = true;
+
+      fetch(API_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          acao: "CRIAR_TAREFA",
+          categoria: categoria,
+          tarefa: textoTarefa,
+          tag: tag
+        })
+      })
+      .then(() => {
+        statusEl.innerText = "✓ Tarefa salva na aba MASTER!";
+        setTimeout(() => { 
+          isSyncing = false;
+          fetchMasterFromSheets(); 
+        }, 2000);
+      })
+      .catch(err => {
+        console.error("Erro ao salvar nova tarefa:", err);
+        statusEl.innerText = "⚠ Erro ao salvar tarefa na nuvem";
         isSyncing = false;
       });
     }
@@ -378,7 +431,6 @@
 
     function resetChecklist() {
       if (confirm("Deseja desmarcar todas as tarefas e iniciar um novo ciclo de serviço no Sheets?")) {
-        // Gera um novo ID de serviço para que os registros do LOG fiquem isolados do ciclo anterior
         idServicoAtual = "SERV_" + Date.now();
         localStorage.setItem("restaurantServiceId", idServicoAtual);
 
@@ -463,6 +515,45 @@
         });
 
         catEl.appendChild(ul);
+
+        // Formulário para adicionar nova tarefa na categoria
+        const addForm = document.createElement("form");
+        addForm.className = "add-form";
+        addForm.innerHTML = `
+          <input type="text" placeholder="+ Nova tarefa nesta etapa..." required />
+          <select>
+            <option value="Cozinha" ${currentSector === "Cozinha" ? "selected" : ""}>Cozinha</option>
+            <option value="ADM" ${currentSector === "ADM" ? "selected" : ""}>ADM</option>
+            <option value="Salão" ${currentSector === "Salão" ? "selected" : ""}>Salão</option>
+          </select>
+          <button class="btn btn-secondary" type="submit">+</button>
+        `;
+
+        addForm.onsubmit = (e) => {
+          e.preventDefault();
+          const input = addForm.querySelector("input");
+          const select = addForm.querySelector("select");
+
+          const texto = input.value.trim();
+          const tag = select.value;
+
+          if (texto) {
+            // Adiciona localmente para feedback instantâneo
+            cat.tasks.push({ 
+              id: Date.now().toString(), 
+              text: texto, 
+              tag: tag, 
+              done: false 
+            });
+            saveState();
+            render();
+
+            // Salva na aba MASTER da planilha
+            addNewTaskToSheets(cat.category, texto, tag);
+          }
+        };
+        catEl.appendChild(addForm);
+
         container.appendChild(catEl);
       });
     }
@@ -503,14 +594,13 @@
     }
 
     /* ==========================================================================
-       10. INICIALIZAÇÃO E INTERVALO DE CONSULTA AUTOMÁTICA
+       10. INICIALIZAÇÃO
        ========================================================================== */
     if (state) {
       render();
     }
     fetchMasterFromSheets();
 
-    // Consulta o Sheets a cada 10 segundos automaticamente para atualizar telas secundárias
     setInterval(fetchMasterFromSheets, 10000);
   </script>
 </body>

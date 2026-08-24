@@ -161,6 +161,7 @@
   <div class="controls">
     <button class="btn btn-primary" id="toggleViewBtn" onclick="toggleHideCompleted()">Esconder Concluídas</button>
     <button class="btn btn-danger" onclick="resetChecklist()">Resetar Tudo</button>
+    <button class="btn btn-secondary" onclick="clearLocalStorage()">Limpar Dados</button>
   </div>
 
   <div id="checklistContainer"></div>
@@ -209,6 +210,7 @@
           "POSTAGEM NO INSTAGRAM DA RISO",
           "VERIFICAR CARDÁPIOS E ATUALIZAR/IMPRIMIR",
           "IMPRIMIR RISOGOODS",
+          "CONFIRMAR NÚMERO DE RESERVAS",
           "VERIFICAR E ATUALIZAR PEDIDON"
           
         ]
@@ -216,7 +218,7 @@
       {
         category: "NO DIA — ATÉ 10HS",
         tasks: [
-          "CONFIRMAR NÚMERO DE RESERVAS",
+          "VARRER O QUINTAL",
           "ORGANIZAR MESAS",
           "LIMPAR BANHEIROS",
           "FAZER 1 MANGARACUJÁ",
@@ -229,7 +231,7 @@
         ]
       },
       {
-        category: "NO DIA — ÀS 11HS",
+        category: "NO DIA — ATÉ MEIO-DIA",
         tasks: [
           "BANCADAS LIMPAS E ESCORREDOR VAZIO",
           "LIXEIRAS INTERNAS VAZIAS",
@@ -253,7 +255,9 @@
         tasks: [
           "PAGAR FORNECEDORES (COGUS, PÃES, ETC)",
           "FAZER PEDIDOS FORNECEDORES",
-          "FAZER PEDIDOS MERCADO LIVRE (SE APLICÁVEL)"
+          "FAZER PEDIDOS MERCADO LIVRE (SE APLICÁVEL)",
+          "FAZER CONTABILIDADE"
+          
         ]
       }
     ];
@@ -363,6 +367,15 @@
         render();
       }
     }
+
+
+  function clearLocalStorage() {
+  if (confirm("Isso apagará todo o histórico salvo e restaurará as tarefas originais. Confirmar?")) {
+    localStorage.removeItem("restaurantChecklistState");
+    state = null; // Reseta o estado em memória
+    location.reload(); // Recarrega a página para recriar os dados iniciais
+  }
+}
 
     let draggedItem = null;
 
